@@ -48,6 +48,6 @@ min_{x} ( sum_{i in V} (c_i + rho - 2rho s - w_{ij})x_i^2 + sum_{(i,j) in E} w_{
 
 where `s` is the total number of sensors that is predefined.
 
-The optimization problem is solved using three different solvers: Gurobi, Simulated Annealing, and D-Wave's implementation of Quantum Annealing via **[neal](https://github.com/dwavesystems/dwave-neal)**.
+The optimal sensor placement problem is solved using five different solvers: Gurobi, Tabu Search, Simulated Annealing, Hubrid Quantum-Classical and Quantum Annealing. via **[neal](https://github.com/dwavesystems/dwave-neal)**.
 
 Additionally, we leverage D-Wave's package **[dwavebinarycsp](https://github.com/dwavesystems/dwavebinarycsp)** to translate constraint satisfaction problems into QUBOs. For Groebner basis computations, we use **[Sympy](https://www.sympy.org/)** for symbolic computation in Python and **[Networkx](https://networkx.github.io/)** for network models and graphs.
