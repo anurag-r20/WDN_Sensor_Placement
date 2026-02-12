@@ -1,0 +1,177 @@
+{
+  "solver": "QuantumAnnealing",
+  "city": "Apulia",
+  "timestamp": "2025-12-13T12:36:38.214941",
+  "parameters": {
+    "num_reads": 4000,
+    "solver_name": "Advantage_system6.4",
+    "solver_id": "Advantage_system6.4",
+    "num_qubits": 5612,
+    "num_couplers": 40088,
+    "topology": "Pegasus"
+  },
+  "timing": {
+    "total_time_seconds": 0.9475440979003906,
+    "qpu_access_time_microseconds": 405207.56,
+    "qpu_access_time_seconds": 0.40520756
+  },
+  "results": {
+    "num_samples": 574,
+    "unique_solutions": 96,
+    "min_energy": 1.944082747509361,
+    "max_energy": 73.65753126095696,
+    "energy_stats": {
+      "mean": 18.388052524826314,
+      "std": 17.06121657902457
+    }
+  },
+  "solver_info": {
+    "timing": {
+      "qpu_sampling_time": 389280.0,
+      "qpu_anneal_time_per_sample": 20.0,
+      "qpu_readout_time_per_sample": 56.74,
+      "qpu_access_time": 405207.56,
+      "qpu_access_overhead_time": 1855.44,
+      "qpu_programming_time": 15927.56,
+      "qpu_delay_time_per_sample": 20.58,
+      "post_processing_overhead_time": 1.0,
+      "total_post_processing_time": 1.0
+    },
+    "problem_id": "d8fd4693-3619-48a4-9978-03a27f893414",
+    "embedding_context": {
+      "embedding": {
+        "1": [
+          3202,
+          1442,
+          1441
+        ],
+        "0": [
+          1457,
+          3097,
+          1456
+        ],
+        "2": [
+          1577,
+          1576,
+          3216,
+          3217
+        ],
+        "3": [
+          3308,
+          1336,
+          3307
+        ],
+        "4": [
+          3442,
+          3441,
+          1306,
+          1307
+        ],
+        "5": [
+          3231,
+          3232,
+          1546
+        ],
+        "6": [
+          1637,
+          3352,
+          3353
+        ],
+        "7": [
+          3291,
+          3293,
+          3292
+        ],
+        "8": [
+          3246,
+          1516,
+          3247
+        ],
+        "9": [
+          1380,
+          1382,
+          3157,
+          1381
+        ],
+        "10": [
+          1412,
+          1411,
+          1410
+        ],
+        "11": [
+          3172,
+          1321,
+          1320
+        ],
+        "12": [
+          1622,
+          3337,
+          3338
+        ],
+        "13": [
+          3276,
+          3278,
+          3277
+        ],
+        "14": [
+          3111,
+          3112,
+          1487,
+          1486
+        ],
+        "15": [
+          1291,
+          3397,
+          3396,
+          1292
+        ],
+        "16": [
+          3381,
+          1472,
+          3382
+        ],
+        "17": [
+          1396,
+          3427,
+          1397
+        ],
+        "18": [
+          3248,
+          1591,
+          3322,
+          3323
+        ],
+        "19": [
+          3067,
+          3201,
+          1366,
+          1365
+        ],
+        "20": [
+          3142,
+          1351,
+          3186,
+          1350
+        ],
+        "21": [
+          1425,
+          1427,
+          1426
+        ],
+        "22": [
+          3261,
+          1501,
+          3262
+        ],
+        "23": [
+          1531,
+          3366,
+          3367
+        ]
+      },
+      "chain_break_method": "majority_vote",
+      "embedding_parameters": {},
+      "chain_strength": 15.186455498782514
+    }
+  }
+}

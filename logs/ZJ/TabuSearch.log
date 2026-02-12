@@ -1,0 +1,23 @@
+=== Tabu Search - ZJ ===
+Timestamp: 2025-12-14T11:52:20.890163
+Parameters: num_reads=4000
+
+
+Total time for Tabu search: 79.1051 seconds
+Number of samples: 4000
+Unique solutions: 380
+Min energy: 4.871023058797604
+
+Solver info: {}
+
+First 10 samples:
+  Sample 1: Energy=4.871023, Occurrences=1
+  Sample 2: Energy=4.871023, Occurrences=1
+  Sample 3: Energy=4.871023, Occurrences=1
+  Sample 4: Energy=4.871023, Occurrences=1
+  Sample 5: Energy=4.871023, Occurrences=1
+  Sample 6: Energy=4.871023, Occurrences=1
+  Sample 7: Energy=4.871023, Occurrences=1
+  Sample 8: Energy=4.871023, Occurrences=1
+  Sample 9: Energy=4.871023, Occurrences=1
+  Sample 10: Energy=4.871023, Occurrences=1
