@@ -99,11 +99,18 @@ breaks reproducibility. **L** is an edge case.
 2. **Fix BUG-01 to BUG-03.** Pass the graph and the reference optimum into `iterate_over_rho`. Choose one
    log-naming scheme, then fix or delete `migrate_logs.py` and the stale Apulia duplicates. Decide whether
    the MIQP uses `=` or `≤` and make the code, the notebook text and the QUBO agree.
-3. **Use a smaller, provable penalty.** For ρ > maxᵢ max(cᵢ, Σ_{j∈N(i)} w_ij − cᵢ), every infeasible
-   placement can be moved one sensor at a time toward a feasible one with strictly lower energy, so the
-   ground state is feasible. This held on 400 random networks, and for these networks it gives ρ ≈ 1.0,
-   against 4.5 (Apulia) to 110 (Kentucky) for the notebook's `Σ|cᵢ| + 1`. A 4–110× smaller energy scale
-   should help QA, given its limited coefficient precision, and SA. Re-run QA on ZJ with it.
+3. **Use a smaller, provable penalty.** Proven in
+   [`docs/penalty_parameter/penalty_thresholds.pdf`](penalty_parameter/penalty_thresholds.pdf):
+   - ρ > maxᵢ max(cᵢ, Σ_{j∈N(i)} w_ij − cᵢ) is strictly exact for the equality budget (Theorem 4).
+   - ρ > max(0, maxᵢ(Σ_j w_ij − cᵢ)) is exact for the inequality budget with slack bits (Theorem 8).
+   - Both thresholds are sharp for every instance.
+   - For every network built by `centrality` with n ≥ 3, **ρ = 2 is exact for every budget**
+     (Corollary 13). The notebook's `Σ|cᵢ| + 1` is exact too, but grows from 3.8 (Test) to 110 (Kentucky).
+   - At the budget the notebook selects (the first minimum of the coverage curve), any ρ > 0 is exact
+     (Proposition 16).
+
+   The penalty therefore only sets the energy scale the samplers see, and a 22× smaller scale on Modena
+   may help QA and SA. Re-run QA on ZJ with ρ = 2.
 4. **Split `Utils.py`.** *Done 2026-10-07.* The 33 functions now live in `src/`, one module per pipeline
    step (`network`, `formulations`, `experiments`, `analysis`, `results_io`, `plotting`; see
    `src/README.md`). The four duplicated functions were kept once each, since their copies were identical.
