@@ -1,0 +1,20 @@
+# Versions the test suite was verified with (Python 3.12, October 2026).
+# Install with:  pip install -r requirements.txt
+numpy==2.5.3
+pandas==3.0.6
+matplotlib==3.11.2
+networkx==3.7
+pyomo==6.10.1
+dimod==0.12.22
+dwave-samplers==1.8.0
+dwave-neal==0.6.0   # provides "import neal" (a thin wrapper over dwave-samplers)
+dwave-tabu==0.5.0   # provides "from tabu import TabuSampler" (a thin wrapper over dwave-samplers)
+
+# Testing
+pytest==9.1.1
+pytest-cov==7.1.0
+
+# The notebook additionally needs, for the cells that use them:
+#   dwave-system   (QPU and Leap hybrid samplers, needs a D-Wave API token)
+#   gurobipy       (Gurobi solver behind pyo.SolverFactory('gurobi'), needs a license)
+#   scipy
