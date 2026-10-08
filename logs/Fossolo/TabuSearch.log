@@ -1,0 +1,23 @@
+=== Tabu Search - Fossolo ===
+Timestamp: 2025-12-14T10:37:35.283968
+Parameters: num_reads=4000
+
+
+Total time for Tabu search: 76.5899 seconds
+Number of samples: 4000
+Unique solutions: 1
+Min energy: 1.8590642116989535
+
+Solver info: {}
+
+First 10 samples:
+  Sample 1: Energy=1.859064, Occurrences=1
+  Sample 2: Energy=1.859064, Occurrences=1
+  Sample 3: Energy=1.859064, Occurrences=1
+  Sample 4: Energy=1.859064, Occurrences=1
+  Sample 5: Energy=1.859064, Occurrences=1
+  Sample 6: Energy=1.859064, Occurrences=1
+  Sample 7: Energy=1.859064, Occurrences=1
+  Sample 8: Energy=1.859064, Occurrences=1
+  Sample 9: Energy=1.859064, Occurrences=1
+  Sample 10: Energy=1.859064, Occurrences=1

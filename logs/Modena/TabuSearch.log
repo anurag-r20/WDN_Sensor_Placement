@@ -1,0 +1,23 @@
+=== Tabu Search - Modena ===
+Timestamp: 2025-12-14T15:27:06.500589
+Parameters: num_reads=4000
+
+
+Total time for Tabu search: 77.9943 seconds
+Number of samples: 4000
+Unique solutions: 671
+Min energy: 8.00808444657548
+
+Solver info: {}
+
+First 10 samples:
+  Sample 1: Energy=8.008084, Occurrences=1
+  Sample 2: Energy=8.008084, Occurrences=1
+  Sample 3: Energy=8.008084, Occurrences=1
+  Sample 4: Energy=8.008084, Occurrences=1
+  Sample 5: Energy=8.008084, Occurrences=1
+  Sample 6: Energy=8.008084, Occurrences=1
+  Sample 7: Energy=8.008084, Occurrences=1
+  Sample 8: Energy=8.008084, Occurrences=1
+  Sample 9: Energy=8.008084, Occurrences=1
+  Sample 10: Energy=8.009127, Occurrences=1
