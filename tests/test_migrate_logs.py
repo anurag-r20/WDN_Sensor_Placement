@@ -12,7 +12,7 @@ from __future__ import annotations
 import migrate_logs
 import pytest
 
-import Utils
+from src import plotting, results_io
 
 
 def test__migrate_logs_to_city_folders__given_flat_city_files__moves_each_into_its_city_folder(tmp_path) -> None:
@@ -39,13 +39,13 @@ def test__migrate_logs_to_city_folders__given_saved_solver_runs__keeps_them_load
     # Arrange
     for solver, energies in [("SimulatedAnnealing", [2.0, 3.0]), ("TabuSearch", [1.5])]:
         samples = [{"solution": {"0": 1}, "energy": e, "num_occurrences": 1} for e in energies]
-        Utils.save_results_json(
+        results_io.save_results_json(
             {}, "Fossolo", solver, str(tmp_path), sample_data=samples, qubo_parameters={"rho": 4.0, "s": 1}
         )
 
     # Act
     migrate_logs.migrate_logs_to_city_folders(str(tmp_path))
-    result = Utils.load_and_plot_feasibility_from_json(
+    result = plotting.load_and_plot_feasibility_from_json(
         str(tmp_path / "Fossolo"),
         "Fossolo",
         solver_names=["SimulatedAnnealing", "TabuSearch"],

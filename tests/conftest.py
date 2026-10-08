@@ -1,6 +1,6 @@
 """Shared fixtures for the test suite.
 
-Every test module imports Utils, so this file makes sure that import is safe on a machine with no
+Every test module imports src, so this file makes sure that import is safe on a machine with no
 display: matplotlib must use its non-interactive "Agg" backend BEFORE pyplot is imported anywhere.
 """
 
@@ -26,6 +26,25 @@ def close_all_figures():
     """Closes every matplotlib figure after each test, so figures never leak between tests."""
     yield
     plt.close("all")
+
+
+@pytest.fixture
+def write_solver_run():
+    """Returns a function that writes one solver run the way save_results_json does, one sample per energy."""
+    from src.results_io import save_results_json
+
+    def write(folder, city: str, solver: str, energies: list, rho: float = 4.0, s: int = 1) -> None:
+        samples = [{"solution": {"0": 1}, "energy": energy, "num_occurrences": 1} for energy in energies]
+        save_results_json(
+            {"results": {}},
+            city,
+            solver,
+            str(folder),
+            sample_data=samples,
+            qubo_parameters={"rho": rho, "s": s, "num_variables": 1},
+        )
+
+    return write
 
 
 @pytest.fixture

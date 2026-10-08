@@ -25,10 +25,11 @@ import random
 import dimod
 import networkx as nx
 import numpy as np
+import pyomo.environ as pyo
 import pytest
 from enumeration_solver import EnumerationSolver, enumerate_binary_pyomo_model, placement_cost
 
-import Utils
+from src import formulations, network
 
 # A fixed seed makes the random sweep generate the same networks on every run, so a failure can be
 # reproduced and debugged.
@@ -56,7 +57,7 @@ def random_network(rng: random.Random, min_nodes: int = 2, max_nodes: int = 8):
             break
     graph = nx.relabel_nodes(graph, {i: f"J-{i}" for i in graph.nodes()})
     water_consumption = {node: rng.uniform(1.0, 100.0) for node in graph.nodes()}
-    vertex_cost, edge_weight = Utils.centrality(graph, water_consumption)
+    vertex_cost, edge_weight = network.centrality(graph, water_consumption)
     return graph, vertex_cost, edge_weight, water_consumption
 
 
@@ -66,7 +67,7 @@ def kite_network():
     graph = nx.Graph()
     graph.add_edges_from([("J-1", "J-2"), ("J-2", "J-3"), ("J-3", "J-1"), ("J-3", "J-4")])
     water_consumption = {"J-1": 10.0, "J-2": 40.0, "J-3": 25.0, "J-4": 5.0}
-    vertex_cost, edge_weight = Utils.centrality(graph, water_consumption)
+    vertex_cost, edge_weight = network.centrality(graph, water_consumption)
     return graph, vertex_cost, edge_weight, water_consumption
 
 
@@ -90,7 +91,7 @@ def test__build_Q_matrix__given_one_pipe_between_two_nodes__matches_the_hand_der
     edge_weight = {("a", "b"): 0.5}
 
     # Act
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s=1, rho=3.0)
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s=1, rho=3.0)
 
     # Assert
     assert Q == pytest.approx(np.array([[-2.5, 3.25], [3.25, -1.5]]))
@@ -132,10 +133,10 @@ def test__qubo_energy__given_every_placement_of_a_small_network__agrees_across_f
     # Arrange
     graph, vertex_cost, edge_weight, water_consumption = kite_network
     nodes = list(graph.nodes())
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
-    bqm = Utils.QUBO_dimod(Q, beta=cQ)
-    pyomo_model = Utils.QUBO(
-        graph, Utils.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "kite"), s, rho
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
+    bqm = formulations.QUBO_dimod(Q, beta=cQ)
+    pyomo_model = formulations.QUBO(
+        graph, formulations.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "kite"), s, rho
     )
 
     for bits in itertools.product((0, 1), repeat=len(nodes)):
@@ -147,7 +148,7 @@ def test__qubo_energy__given_every_placement_of_a_small_network__agrees_across_f
         from_definition = placement_cost(vertex_cost, edge_weight, sensors) + rho * (sum(bits) - s) ** 2
         from_q_matrix = qubo_energy(Q, cQ, bits)
         from_bqm = bqm.energy(dict(enumerate(bits)))
-        from_pyomo = Utils.pyo.value(pyomo_model.obj)
+        from_pyomo = pyo.value(pyomo_model.obj)
 
         # Assert
         assert from_q_matrix == pytest.approx(from_definition), f"Q matrix, placement {bits}"
@@ -176,8 +177,8 @@ def test__qubo_ground_state__given_random_small_networks_and_the_notebook_rho__i
         graph, vertex_cost, edge_weight, _ = random_network(rng)
         s = rng.randint(0, graph.number_of_nodes())
         rho = notebook_rho(vertex_cost)
-        Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
-        bqm = Utils.QUBO_dimod(Q, beta=cQ)
+        Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
+        bqm = formulations.QUBO_dimod(Q, beta=cQ)
 
         # Act
         ground_state = dimod.ExactSolver().sample(bqm).first
@@ -203,10 +204,10 @@ def test__build_Q_matrix__given_the_nodes_in_reverse_order__has_the_same_ground_
     s, rho = 2, notebook_rho(vertex_cost)
 
     # Act
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
-    Q_rev, cQ_rev = Utils.build_Q_matrix(reversed_graph, vertex_cost, edge_weight, s, rho)
-    original = dimod.ExactSolver().sample(Utils.QUBO_dimod(Q, cQ)).first.energy
-    reordered = dimod.ExactSolver().sample(Utils.QUBO_dimod(Q_rev, cQ_rev)).first.energy
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
+    Q_rev, cQ_rev = formulations.build_Q_matrix(reversed_graph, vertex_cost, edge_weight, s, rho)
+    original = dimod.ExactSolver().sample(formulations.QUBO_dimod(Q, cQ)).first.energy
+    reordered = dimod.ExactSolver().sample(formulations.QUBO_dimod(Q_rev, cQ_rev)).first.energy
 
     # Assert
     assert reordered == pytest.approx(original)
@@ -224,8 +225,8 @@ def test__build_Q_matrix__given_costs_weights_and_rho_multiplied_by_k__multiplie
     scaled_weight = {edge: k * value for edge, value in edge_weight.items()}
 
     # Act
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
-    Q_k, cQ_k = Utils.build_Q_matrix(graph, scaled_cost, scaled_weight, s, k * rho)
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho)
+    Q_k, cQ_k = formulations.build_Q_matrix(graph, scaled_cost, scaled_weight, s, k * rho)
 
     # Assert
     for bits in itertools.product((0, 1), repeat=graph.number_of_nodes()):
@@ -240,8 +241,8 @@ def test__build_Q_matrix__given_a_feasible_placement__has_an_energy_independent_
     feasible = [bits for bits in itertools.product((0, 1), repeat=graph.number_of_nodes()) if sum(bits) == s]
 
     # Act
-    Q_low, cQ_low = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=1.0)
-    Q_high, cQ_high = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=50.0)
+    Q_low, cQ_low = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=1.0)
+    Q_high, cQ_high = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=50.0)
 
     # Assert
     for bits in feasible:
@@ -256,8 +257,8 @@ def test__build_Q_matrix__given_an_infeasible_placement__has_an_energy_that_grow
     infeasible = [bits for bits in itertools.product((0, 1), repeat=graph.number_of_nodes()) if sum(bits) != s]
 
     # Act
-    Q_low, cQ_low = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=1.0)
-    Q_high, cQ_high = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=50.0)
+    Q_low, cQ_low = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=1.0)
+    Q_high, cQ_high = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, s, rho=50.0)
 
     # Assert
     for bits in infeasible:
@@ -272,10 +273,10 @@ def test__MIQP__given_a_larger_sensor_budget__does_not_raise_the_optimum(kite_ne
     """
     # Arrange
     graph, vertex_cost, edge_weight, water_consumption = kite_network
-    base = Utils.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "kite")
+    base = formulations.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "kite")
 
     # Act
-    optima = [enumerate_binary_pyomo_model(Utils.MIQP(graph, base, s)).objective_value for s in range(5)]
+    optima = [enumerate_binary_pyomo_model(formulations.MIQP(graph, base, s)).objective_value for s in range(5)]
 
     # Assert
     for smaller_budget, larger_budget in zip(optima, optima[1:]):
@@ -298,10 +299,10 @@ def test__MIQP__given_a_sensor_budget__has_the_same_optimum_as_the_documented_eq
     vertex_cost = {"a": 5.0, "b": 5.0, "c": 5.0}
     edge_weight = {("a", "b"): 0.1, ("b", "c"): 0.1}
     water_consumption = {"a": 1.0, "b": 1.0, "c": 1.0}
-    base = Utils.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "pipe")
+    base = formulations.create_pyomo_model(graph, water_consumption, vertex_cost, edge_weight, "pipe")
 
     # Act
-    miqp_optimum = enumerate_binary_pyomo_model(Utils.MIQP(graph, base, 2))
+    miqp_optimum = enumerate_binary_pyomo_model(formulations.MIQP(graph, base, 2))
     documented_optimum = EnumerationSolver().run(vertex_cost, edge_weight, s=2, relation="=")
 
     # Assert

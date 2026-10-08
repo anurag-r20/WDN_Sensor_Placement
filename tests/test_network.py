@@ -1,4 +1,4 @@
-"""Unit tests for the NETWORK/GRAPH FUNCTIONS section of Utils.py: reading a network and scoring it.
+"""Unit tests for the src/network.py: reading a network and scoring it.
 
 The data under tests/resources is a copy of the 18-node "Test" network from Data/WDN_Data/Test_WDN.
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 import networkx as nx
 import pytest
 
-import Utils
+from src import network
 
 # =============================================================================
 # WDN_network_data
@@ -22,7 +22,7 @@ def test__WDN_network_data__given_the_test_network__reads_every_node_edge_and_co
     test_network_base_dir,
 ) -> None:
     # Act
-    coords, edges, water_consumption = Utils.WDN_network_data("Test", base_dir=test_network_base_dir)
+    coords, edges, water_consumption = network.WDN_network_data("Test", base_dir=test_network_base_dir)
 
     # Assert
     assert len(coords) == 18
@@ -36,7 +36,7 @@ def test__WDN_network_data__given_padded_names_in_the_files__strips_the_whitespa
     # The files are written as "J-3, J-15": without stripping, " J-15" would be a different node.
 
     # Act
-    coords, edges, _ = Utils.WDN_network_data("Test", base_dir=test_network_base_dir)
+    coords, edges, _ = network.WDN_network_data("Test", base_dir=test_network_base_dir)
 
     # Assert
     assert ("J-3", "J-15") in edges
@@ -47,7 +47,7 @@ def test__WDN_network_data__given_an_unknown_city__returns_three_nones(test_netw
     # Characterization test: the docstring promises a ValueError, but the code prints and returns Nones.
 
     # Act
-    result = Utils.WDN_network_data("Atlantis", base_dir=test_network_base_dir)
+    result = network.WDN_network_data("Atlantis", base_dir=test_network_base_dir)
 
     # Assert
     assert result == (None, None, None)
@@ -55,7 +55,7 @@ def test__WDN_network_data__given_an_unknown_city__returns_three_nones(test_netw
 
 def test__WDN_network_data__given_a_base_dir_without_data__returns_three_nones(tmp_path) -> None:
     # Act
-    result = Utils.WDN_network_data("Test", base_dir=str(tmp_path))
+    result = network.WDN_network_data("Test", base_dir=str(tmp_path))
 
     # Assert
     assert result == (None, None, None)
@@ -72,7 +72,7 @@ def test__Construct_Graph__given_coordinates_and_edges__stores_each_coordinate_a
     edges = {("a", "b")}
 
     # Act
-    graph = Utils.Construct_Graph("Tiny", coords, edges)
+    graph = network.Construct_Graph("Tiny", coords, edges)
 
     # Assert
     assert nx.get_node_attributes(graph, "pos") == coords
@@ -82,7 +82,7 @@ def test__Construct_Graph__given_coordinates_and_edges__stores_each_coordinate_a
 @pytest.mark.parametrize("coords,edges", [(None, {("a", "b")}), ({"a": (0, 0)}, None)])
 def test__Construct_Graph__given_missing_data__returns_none(coords, edges) -> None:
     # Act
-    graph = Utils.Construct_Graph("Tiny", coords, edges)
+    graph = network.Construct_Graph("Tiny", coords, edges)
 
     # Assert
     assert graph is None
@@ -96,7 +96,7 @@ def test__Construct_Graph__given_missing_data__returns_none(coords, edges) -> No
 def test__centrality__given_a_three_node_pipe__weights_each_pipe_by_its_edge_betweenness(path_graph_abc) -> None:
     """Known oracle: of the 3 node pairs, 2 route through each pipe, so each edge betweenness is 2/3."""
     # Act
-    _, edge_weight = Utils.centrality(path_graph_abc, {"a": 1.0, "b": 1.0, "c": 1.0})
+    _, edge_weight = network.centrality(path_graph_abc, {"a": 1.0, "b": 1.0, "c": 1.0})
 
     # Assert
     assert edge_weight == pytest.approx({("a", "b"): 2 / 3, ("b", "c"): 2 / 3})
@@ -112,7 +112,7 @@ def test__centrality__given_a_three_node_pipe__scores_nodes_by_normalized_demand
     (n = 3), degree centrality is 0.5, 1.0, 0.5, so g = 0.25, 0.5, 0.25.
     """
     # Act
-    vertex_cost, _ = Utils.centrality(path_graph_abc, {"a": 10.0, "b": 40.0, "c": 20.0})
+    vertex_cost, _ = network.centrality(path_graph_abc, {"a": 10.0, "b": 40.0, "c": 20.0})
 
     # Assert
     assert vertex_cost == pytest.approx({"a": 0.25 + 0.25, "b": 1.0 + 0.5, "c": 0.5 + 0.25})
@@ -122,7 +122,7 @@ def test__centrality__given_a_network__keys_the_edge_weights_like_the_graph_edge
     # create_pyomo_model indexes its weight parameter by G.edges(), so the orientation must match.
 
     # Act
-    _, edge_weight = Utils.centrality(path_graph_abc, {"a": 1.0, "b": 1.0, "c": 1.0})
+    _, edge_weight = network.centrality(path_graph_abc, {"a": 1.0, "b": 1.0, "c": 1.0})
 
     # Assert
     assert set(edge_weight) == set(path_graph_abc.edges())
@@ -136,7 +136,7 @@ def test__centrality__given_a_network__keys_the_edge_weights_like_the_graph_edge
 def test__centrality__given_a_node_without_consumption_data__raises_key_error(path_graph_abc) -> None:
     # Act
     with pytest.raises(Exception) as error:
-        Utils.centrality(path_graph_abc, {"a": 1.0, "b": 2.0})
+        network.centrality(path_graph_abc, {"a": 1.0, "b": 2.0})
 
     # Assert
     assert isinstance(error.value, KeyError)

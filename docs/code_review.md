@@ -1,6 +1,6 @@
 # Code review: WDN sensor placement (`WDN_Sensor_Placement`)
 
-*Reviewed 2026-10-07 against `Utils.py`, `WDN_Sensor_Placement_Latest.ipynb`, `INP_TO_TXT.ipynb`,
+*Reviewed 2026-10-07 against `Utils.py` (since split into `src/`, see section 4), `WDN_Sensor_Placement_Latest.ipynb`, `INP_TO_TXT.ipynb`,
 `migrate_logs.py` and the JSON logs under `logs/`. Every bug below was reproduced by running the code.
 Most have a matching test marked `xfail` in `tests/`.*
 
@@ -63,24 +63,24 @@ breaks reproducibility. **L** is an edge case.
 
 | ID | Sev | Where | What happens | Test |
 |---|:-:|---|---|---|
-| BUG-01 | H | `Utils.py:1189` `iterate_over_rho` | Reads `G`, `VC`, `EB` and `objective_value_list_MIP_min` as globals that exist only in the notebook, so it raises `NameError`. Cell 14 (the ρ sweep) cannot run. | `test_utils_optimization.py` |
-| BUG-02 | H | `migrate_logs.py:41` vs `Utils.py:89,331` | Saving and loading both use `logs/<city>/<city>_<solver>.json`, while the migration strips the `<city>_` prefix. As a result, `load_and_plot_feasibility_from_json('logs/Fossolo', 'Fossolo')` raises *"No valid JSON files found"* today. Apulia keeps both versions. | `test_migrate_logs.py` |
-| BUG-03 | H | `Utils.py:1409` `MIQP` | The constraint is `Σx ≤ s`, but the documented model (cell 9) and the QUBO penalty use `Σx = s`. The two coincide only at the `s` where the coverage curve first reaches its minimum. Elsewhere Gurobi and the samplers solve different problems: on a 3-node pipe with `s = 2` the optimum is 0.2 versus 10.0. | `oracles/test_sensor_placement_oracles.py` |
-| BUG-04 | M | `Utils.py:1137` `plot_sensor_placement` | Calls `plt.show()` unconditionally. In Jupyter that closes the figure, so `plot_comparison(show=False)` followed by `save_current_figure` saves nothing (cell 21). | `test_utils_plotting.py` |
-| BUG-05 | M | `Utils.py:1125` | Tests `== 1` on solver values. Gurobi can return `0.9999999`, and that sensor is then drawn as "no sensor". | `test_utils_plotting.py` |
-| BUG-06 | M | `Utils.py:917-920` `calculate_tts` | When a sample is not dict-like (a NumPy array or list), `total_size` keeps its previous value, so every read counts as feasible: `p_fea = 1.0` instead of 0.5. | `test_utils_data_processing.py` |
+| BUG-01 | H | `src/experiments.py:75` `iterate_over_rho` | Reads `G`, `VC`, `EB` and `objective_value_list_MIP_min` as globals that exist only in the notebook, so it raises `NameError`. Cell 14 (the ρ sweep) cannot run. | `test_experiments.py` |
+| BUG-02 | H | `migrate_logs.py:41` vs `src/results_io.py:80`, `src/plotting.py:531` | Saving and loading both use `logs/<city>/<city>_<solver>.json`, while the migration strips the `<city>_` prefix. As a result, `load_and_plot_feasibility_from_json('logs/Fossolo', 'Fossolo')` raises *"No valid JSON files found"* today. Apulia keeps both versions. | `test_migrate_logs.py` |
+| BUG-03 | H | `src/formulations.py:139` `MIQP` | The constraint is `Σx ≤ s`, but the documented model (cell 9) and the QUBO penalty use `Σx = s`. The two coincide only at the `s` where the coverage curve first reaches its minimum. Elsewhere Gurobi and the samplers solve different problems: on a 3-node pipe with `s = 2` the optimum is 0.2 versus 10.0. | `oracles/test_sensor_placement_oracles.py` |
+| BUG-04 | M | `src/plotting.py:127` `plot_sensor_placement` | Calls `plt.show()` unconditionally. In Jupyter that closes the figure, so `plot_comparison(show=False)` followed by `save_current_figure` saves nothing (cell 21). | `test_plotting.py` |
+| BUG-05 | M | `src/plotting.py:115` | Tests `== 1` on solver values. Gurobi can return `0.9999999`, and that sensor is then drawn as "no sensor". | `test_plotting.py` |
+| BUG-06 | M | `src/analysis.py:165-168` `calculate_tts` | When a sample is not dict-like (a NumPy array or list), `total_size` keeps its previous value, so every read counts as feasible: `p_fea = 1.0` instead of 0.5. | `test_analysis.py` |
 | BUG-07 | M | Notebook cells 48–51 | TTS mixes units. SA and Tabu use wall-clock seconds, while Leap `run_time` and QA `qpu_access_time` are in µs. The cells also hard-code `s = 15/11` and thresholds 1.877/1.313 from other networks while `city = "Modena"` (s = 87). Check whether the published TTS values were converted. | none (notebook) |
-| BUG-08 | L/M | `Utils.py:826` `bin_energy_levels` (also lines 707, 717) | Float floor division misplaces values on bin edges: `0.3 // 0.1 == 2.0`, so 0.3 lands in the 0.2 bin and 0.7 in the 0.6 bin. Bars, the Gurobi line and the boundary line can be off by one bin. | `test_utils_data_processing.py` |
-| BUG-09 | L | `Utils.py:1531-1533` `centrality` | A node missing from the consumption file is silently dropped (the docstring promises `KeyError`). `build_Q_matrix` then fails later with an unrelated-looking `KeyError`. | `test_utils_network.py` |
-| BUG-10 | L | `Utils.py:112-121` `save_results_json` | `np.bool_` is not converted, so `json.dump` raises `TypeError`. The function also mutates the caller's dict. | `test_utils_logging.py` |
-| BUG-11 | L | `Utils.py:846-851` `sum_infeas_soln` | An energy exactly equal to the threshold produces a duplicate index entry, and the index name is dropped. | `test_utils_data_processing.py` |
-| BUG-12 | L | `Utils.py:1068-1073` `build_Q_matrix` | For a self-loop `(i, i)` the linear term is subtracted twice (−2w instead of −w). | `test_utils_optimization.py` |
+| BUG-08 | L/M | `src/analysis.py:130` `bin_energy_levels` (also `src/plotting.py:276,286`) | Float floor division misplaces values on bin edges: `0.3 // 0.1 == 2.0`, so 0.3 lands in the 0.2 bin and 0.7 in the 0.6 bin. Bars, the Gurobi line and the boundary line can be off by one bin. | `test_analysis.py` |
+| BUG-09 | L | `src/network.py:180-182` `centrality` | A node missing from the consumption file is silently dropped (the docstring promises `KeyError`). `build_Q_matrix` then fails later with an unrelated-looking `KeyError`. | `test_network.py` |
+| BUG-10 | L | `src/results_io.py:103-112` `save_results_json` | `np.bool_` is not converted, so `json.dump` raises `TypeError`. The function also mutates the caller's dict. | `test_results_io.py` |
+| BUG-11 | L | `src/analysis.py:106-111` `sum_infeas_soln` | An energy exactly equal to the threshold produces a duplicate index entry, and the index name is dropped. | `test_analysis.py` |
+| BUG-12 | L | `src/formulations.py:45-50` `build_Q_matrix` | For a self-loop `(i, i)` the linear term is subtracted twice (−2w instead of −w). | `test_formulations.py` |
 | BUG-13 | L | Notebook cell 24 | `G = nx.from_numpy_array(Q)` overwrites the network graph. Later uses of `G` for plotting or sensor results would be wrong. | none (notebook) |
 | BUG-14 | L | Docstrings | Several docstrings contradict the code. `calculate_approximation_ratio` claims (150, 100) → 1.5 but returns −0.5. The `QUBO_dimod` example output is wrong. `build_Q_matrix` omits `rho`. `coverage` documents a `rho` argument it does not take. `WDN_network_data` says it raises, but it returns `(None, None, None)`. The `Construct_Graph` example uses the wrong signature. | characterization tests |
 
 ### Suspected issues (confirm intent)
 
-- **SUSPECT-1, `centrality` degree term (`Utils.py:1534`).** `nx.degree_centrality` is already divided by
+- **SUSPECT-1, `centrality` degree term (`src/network.py:183`).** `nx.degree_centrality` is already divided by
   *n − 1*, and the code divides by *n − 1* again. The degree term is therefore at most 1/(n−1), about 0.004
   for Modena, so the vertex cost is effectively demand alone. A characterization test pins the current
   behaviour.
@@ -104,10 +104,12 @@ breaks reproducibility. **L** is an edge case.
    ground state is feasible. This held on 400 random networks, and for these networks it gives ρ ≈ 1.0,
    against 4.5 (Apulia) to 110 (Kentucky) for the notebook's `Σ|cᵢ| + 1`. A 4–110× smaller energy scale
    should help QA, given its limited coefficient precision, and SA. Re-run QA on ZJ with it.
-4. **Split `Utils.py`.** It is 1,659 lines, and four functions are defined twice (`bin_energy_levels`,
-   `sum_infeas_soln`, `sampleset_to_df`, `calculate_tts`; the second copy silently wins, so edits to the
-   first have no effect). Split it into modules along its own section headers (`io`, `network`, `model`,
-   `metrics`, `plotting`) and replace `from Utils import *` with explicit imports.
+4. **Split `Utils.py`.** *Done 2026-10-07.* The 33 functions now live in `src/`, one module per pipeline
+   step (`network`, `formulations`, `experiments`, `analysis`, `results_io`, `plotting`; see
+   `src/README.md`). The four duplicated functions were kept once each, since their copies were identical.
+   The notebook imports explicitly instead of `from Utils import *`. The move changed no behaviour: the
+   function syntax trees match the original apart from the default data folder and three redundant inner
+   imports, and the test suite gives the same 85 passes and 13 known-bug failures before and after.
 5. **Move the experiment out of the notebook.** A script `run_city.py --city ZJ --solvers sa,tabu,qa` would
    write one JSON per solver, including Gurobi baselines and QA chain-break statistics. The notebook would
    then only read logs and plot, and the TTS table would be computed from logs with consistent units.
@@ -137,16 +139,17 @@ The tests follow [sefop/training-testing-python](https://github.com/sefop/traini
 - the expected behaviour comes from an explicit oracle.
 
 ```
-tests/
+tests/                                one test file per src module (SEFOP mirror layout)
   conftest.py                         Agg backend, shared fixtures
-  test_utils_network.py               WDN_network_data, Construct_Graph, centrality
-  test_utils_optimization.py          build_Q_matrix, QUBO_dimod, Pyomo models, approximation ratio
-  test_utils_data_processing.py       probability tables, binning, TTS, feasibility boundary
-  test_utils_logging.py               log context, JSON save/load, figure saving
-  test_utils_plotting.py              show=False contract and sensor colouring (mocks)
-  test_migrate_logs.py                migration, and its contract with the JSON loader
+  test_network.py                     src/network.py
+  test_formulations.py                src/formulations.py
+  test_experiments.py                 src/experiments.py
+  test_analysis.py                    src/analysis.py
+  test_results_io.py                  src/results_io.py
+  test_plotting.py                    src/plotting.py (show=False contract and colouring via mocks)
+  test_migrate_logs.py                migrate_logs.py, and its contract with the JSON loader
   oracles/
-    enumeration_solver.py             brute-force pseudo-oracle (shares no code with Utils)
+    enumeration_solver.py             brute-force pseudo-oracle (shares no code with src)
     test_sensor_placement_oracles.py  known, differential, pseudo-oracle and metamorphic tests
   integration/test_pipeline.py        data -> QUBO -> SA/Tabu -> JSON -> boundary; logs regression
   resources/Data/WDN_Data/Test_WDN/   copy of the 18-node Test network
@@ -167,7 +170,7 @@ WDN_BASE_DIR=/other/folder pytest        # read Data/ from another folder
 its test reports *XPASS* and the run fails. Delete the marker at that point, and from then on the test
 guards the fix.
 
-**Checking the tests themselves.** Eight deliberate mutations were each applied to a copy of `Utils.py`,
+**Checking the tests themselves.** Eight deliberate mutations were each applied to a copy of the code (then `Utils.py`),
 and all eight were caught. They were:
 
 - *w*/2 → *w* in Q;

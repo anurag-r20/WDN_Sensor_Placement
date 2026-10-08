@@ -3,7 +3,7 @@
 The notebook's sensor placement problem is
 
     min_x  sum_i c_i x_i  +  sum_(i,j) w_ij (1 - x_i)(1 - x_j)
-    s.t.   sum_i x_i = s                (the documented model; MIQP() in Utils uses <= s)
+    s.t.   sum_i x_i = s                (the documented model; MIQP() in src/formulations.py uses <= s)
            x_i in {0, 1}
 
 EnumerationSolver tries every one of the 2^n placements and keeps the cheapest feasible one. It works

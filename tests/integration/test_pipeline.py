@@ -25,7 +25,7 @@ import pytest
 from enumeration_solver import placement_cost
 from tabu import TabuSampler
 
-import Utils
+from src import formulations, network, plotting, results_io
 
 pytestmark = pytest.mark.integration
 
@@ -40,17 +40,17 @@ SEED: int = 7
 def test_network(test_network_base_dir):
     """The 18-node Test network as the notebook builds it (cells 3 to 7), with the notebook's rho."""
     with redirect_stdout(io.StringIO()):  # WDN_network_data prints every file path it reads
-        coords, edges, water_consumption = Utils.WDN_network_data("Test", base_dir=test_network_base_dir)
-    graph = Utils.Construct_Graph("Test", coords, edges)
-    vertex_cost, edge_weight = Utils.centrality(graph, water_consumption)
+        coords, edges, water_consumption = network.WDN_network_data("Test", base_dir=test_network_base_dir)
+    graph = network.Construct_Graph("Test", coords, edges)
+    vertex_cost, edge_weight = network.centrality(graph, water_consumption)
     rho = float(np.sum(np.abs(list(vertex_cost.values()))) + 1)
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, SENSORS, rho)
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, SENSORS, rho)
     return {
         "graph": graph,
         "vertex_cost": vertex_cost,
         "edge_weight": edge_weight,
         "rho": rho,
-        "bqm": Utils.QUBO_dimod(Q, beta=cQ),
+        "bqm": formulations.QUBO_dimod(Q, beta=cQ),
     }
 
 
@@ -95,16 +95,16 @@ def test__pipeline__given_a_sampler_run_saved_to_json__reloads_it_and_finds_the_
     qubo_parameters = {"rho": test_network["rho"], "s": SENSORS, "num_variables": 18}
 
     # Act
-    Utils.save_results_json(
+    results_io.save_results_json(
         {"results": {"min_energy": sampleset.first.energy}},
         "Test",
         "SimulatedAnnealing",
         str(tmp_path),
-        sample_data=Utils.extract_sample_data(sampleset.aggregate()),
+        sample_data=results_io.extract_sample_data(sampleset.aggregate()),
         qubo_parameters=qubo_parameters,
     )
     with redirect_stdout(io.StringIO()):
-        result = Utils.load_and_plot_feasibility_from_json(
+        result = plotting.load_and_plot_feasibility_from_json(
             str(tmp_path),
             "Test",
             solver_names=["SimulatedAnnealing"],
@@ -139,13 +139,13 @@ def test__build_Q_matrix__given_a_logged_run__reproduces_the_logged_energies(cit
     # Arrange
     run = json.loads(log_path.read_text())
     with redirect_stdout(io.StringIO()):
-        coords, edges, water_consumption = Utils.WDN_network_data(city, base_dir=str(DATA_BASE_DIR))
-    graph = Utils.Construct_Graph(city, coords, edges)
-    vertex_cost, edge_weight = Utils.centrality(graph, water_consumption)
+        coords, edges, water_consumption = network.WDN_network_data(city, base_dir=str(DATA_BASE_DIR))
+    graph = network.Construct_Graph(city, coords, edges)
+    vertex_cost, edge_weight = network.centrality(graph, water_consumption)
     parameters = run["qubo_parameters"]
 
     # Act
-    Q, cQ = Utils.build_Q_matrix(graph, vertex_cost, edge_weight, parameters["s"], parameters["rho"])
+    Q, cQ = formulations.build_Q_matrix(graph, vertex_cost, edge_weight, parameters["s"], parameters["rho"])
 
     # Assert
     assert parameters["num_variables"] == graph.number_of_nodes()
