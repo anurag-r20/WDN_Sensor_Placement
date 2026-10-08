@@ -1,0 +1,23 @@
+=== Simulated Annealing - Apulia ===
+Timestamp: 2025-12-14T11:39:51.100296
+Parameters: num_reads=4000
+
+
+Total time for Simulated Annealing: 1.7562 seconds
+Number of samples: 4000
+Unique solutions: 3997
+Min energy: 1.5020345745945818
+
+Solver info: {'beta_range': [0.006143635415482951, 1.7401553530455074], 'beta_schedule_type': 'geometric', 'timing': {'preprocessing_ns': 5933532, 'sampling_ns': 1742691138, 'postprocessing_ns': 7559718}}
+
+First 10 samples:
+  Sample 1: Energy=1.502035, Occurrences=1
+  Sample 2: Energy=1.514662, Occurrences=1
+  Sample 3: Energy=1.526142, Occurrences=1
+  Sample 4: Energy=1.526803, Occurrences=1
+  Sample 5: Energy=1.529600, Occurrences=1
+  Sample 6: Energy=1.541397, Occurrences=1
+  Sample 7: Energy=1.541685, Occurrences=1
+  Sample 8: Energy=1.543862, Occurrences=1
+  Sample 9: Energy=1.545741, Occurrences=1
+  Sample 10: Energy=1.546667, Occurrences=1

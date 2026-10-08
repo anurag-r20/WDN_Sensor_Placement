@@ -1,0 +1,12 @@
+=== Quantum Annealing - Modena ===
+Timestamp: 2025-12-14T15:38:53.140505
+Solver: Advantage_system6.4
+Parameters: num_reads=4000
+
+
+Solver ID: Advantage_system6.4
+Topology: Pegasus
+Number of qubits: 5612
+Number of couplers: 40088
+
+Running quantum annealing...

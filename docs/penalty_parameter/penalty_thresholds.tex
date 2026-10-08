@@ -1,0 +1,669 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{remark}[theorem]{Remark}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\ones}{\mathbf{1}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\rbeq}{\bar\rho_{=}}
+\newcommand{\rble}{\bar\rho_{\le}}
+\newcommand{\rseq}{\rho^\star_{=}}
+\newcommand{\rsle}{\rho^\star_{\le}}
+
+\title{Penalty Thresholds for the Sensor Placement QUBO:\\
+Equality and Inequality Sensor Budgets}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We characterize the penalty parameter required for exactness of the QUBO
+reformulation of the water distribution network (WDN) sensor placement problem,
+for an equality budget $\sum_i x_i=s$ and for an inequality budget
+$\sum_i x_i\le s$ encoded with binary slack variables. For arbitrary vertex costs
+$c_i$ and nonnegative pipe weights $w_{ij}$, the penalty
+$\rho>\bar\rho_{=}:=\max_i\max\{c_i,\,W_i-c_i\}$ is strictly exact for the
+equality budget and $\rho>\bar\rho_{\le}:=\max\{0,\max_i(W_i-c_i)\}$ for the
+inequality budget, where $W_i$ is the total weight of the pipes at $i$. Unlike the
+balanced minimum-cut threshold, these values do not grow with $n$: a single sensor
+move changes the objective only through its own neighborhood. Both thresholds are
+sharp for every instance, because the exact critical penalty attains them at the
+extreme budgets $s\in\{0,n\}$. For the costs and edge-betweenness weights built
+by the repository's \texttt{centrality} from nonnegative demands, every network
+with $n\ge3$ satisfies $\bar\rho_{=}<2$, so $\rho=2$ is exact for every network
+and every budget, while the rule $\rho=\sum_i|c_i|+1$ used in the notebook grows
+from $3.8$ to $110$ across the networks in the repository. Finally, the exact per-instance critical penalty is
+an explicit function of the coverage curve, and it vanishes at the budget the
+notebook selects: there the penalty enforces nothing and only rescales the energy
+landscape.
+\end{abstract}
+
+\section{Setup}
+\label{sec:setup}
+
+Let $G=(V,E)$ be a graph on $n:=|V|$ vertices, with a cost $c_i\in\mathbb R$ for
+every vertex and a weight $w_{ij}\ge0$ for every undirected edge
+$\{i,j\}\in E$. Write $N(i)$ for the neighbors of $i$,
+\begin{equation}
+W_i:=\sum_{j\in N(i)} w_{ij},
+\qquad
+a_i:=W_i-c_i .
+\label{eq:Wa}
+\end{equation}
+
+\paragraph{Objective.}
+For $\x\in\{0,1\}^n$, where $x_i=1$ places a sensor at $i$, set
+\begin{equation}
+f(\x):=\sum_{i\in V}c_ix_i+\sum_{\{i,j\}\in E}w_{ij}(1-x_i)(1-x_j).
+\label{eq:obj}
+\end{equation}
+A pipe contributes its weight exactly when neither endpoint carries a sensor, so
+$f$ trades the cost of the sensors against the weight of the pipes left
+unmonitored. This is the objective of \texttt{MIQP}, \texttt{QUBO} and
+\texttt{build\_Q\_matrix} in \texttt{src/formulations.py}. Write
+$S(\x):=\{i:x_i=1\}$ and $k:=|S(\x)|$. For $i\in S$, let $R_i^-(\x)$ flip $x_i$
+from $1$ to $0$; for $i\notin S$, let $R_i^+(\x)$ flip $x_i$ from $0$ to $1$.
+
+\paragraph{Coverage curves.}
+For $0\le k\le n$ define the equality and inequality optima
+\begin{equation}
+m_k:=\min\Bigl\{f(\x):\textstyle\sum_i x_i=k\Bigr\},
+\qquad
+M_k:=\min\Bigl\{f(\x):\textstyle\sum_i x_i\le k\Bigr\}=\min_{j\le k}m_j .
+\label{eq:coverage}
+\end{equation}
+The sequence $(M_k)$ is the curve computed by \texttt{coverage} in
+\texttt{src/experiments.py}, whose \texttt{MIQP} uses $\sum_ix_i\le s$.
+
+\paragraph{Equality budget.}
+For a budget $0\le s\le n$, the constrained problem has optimal value $m_s$ and
+the penalized QUBO is
+\begin{equation}
+F_\rho(\x):=f(\x)+\rho\Bigl(\sum_{i\in V}x_i-s\Bigr)^2 .
+\label{eq:Feq}
+\end{equation}
+This is $\x^\top Q\x+c_Q$ with $(Q,c_Q)$ returned by \texttt{build\_Q\_matrix}.
+
+\paragraph{Inequality budget.}
+For $s\ge0$, the constrained problem $\min\{f(\x):\sum_ix_i\le s\}$ has optimal
+value $M_s$. Introduce $K$ slack bits $\y\in\{0,1\}^K$ and positive integer
+coefficients $\beta_1,\dots,\beta_K$ such that
+\begin{equation}
+B(\y):=\sum_{\ell=1}^K\beta_\ell y_\ell,
+\qquad
+\{B(\y):\y\in\{0,1\}^K\}\supseteq\{0,1,\dots,s\}.
+\label{eq:slack}
+\end{equation}
+The bounded binary encoding $K=\lfloor\log_2 s\rfloor+1$,
+$\beta_\ell=2^{\ell-1}$ for $\ell<K$ and $\beta_K=s-2^{K-1}+1$ has range exactly
+$\{0,\dots,s\}$; for $s=0$, $K=0$. The penalized QUBO is
+\begin{equation}
+G_\rho(\x,\y):=f(\x)+\rho\Bigl(\sum_{i\in V}x_i+B(\y)-s\Bigr)^2 .
+\label{eq:Gle}
+\end{equation}
+Write $d(\x,\y):=\sum_ix_i+B(\y)-s$ for the residual of the slack equation.
+
+\paragraph{Goal.}
+We seek penalties guaranteeing \emph{strict exactness}: $F_\rho(\x)>m_s$ for
+every $\x$ with $\sum_ix_i\neq s$, and $G_\rho(\x,\y)>M_s$ for every $(\x,\y)$
+with $d(\x,\y)\neq0$. The per-instance critical penalties are
+\begin{align}
+\rseq(s)&:=\inf\{\rho>0:\text{every minimizer of }F_\rho\text{ is feasible}\},
+\label{eq:rhostar-def}\\
+\rsle(s)&:=\inf\{\rho>0:\text{every minimizer of }G_\rho\text{ has }d=0\}.
+\nonumber
+\end{align}
+
+\begin{remark}[Spin units]
+\label{rem:spin}
+With $x_i=(z_i+1)/2$ one has $\sum_iz_i=2\sum_ix_i-n$, so
+$\rho(\sum_ix_i-s)^2=\rho_z(\sum_iz_i-2s+n)^2$ with $\rho_z=\rho/4$. All
+thresholds below are stated for the binary parameter $\rho$, as in the code; the
+spin values are obtained by dividing by $4$, as in the balanced minimum-cut
+analysis of \cite{RSDB2026}.
+\end{remark}
+
+\section{One-flip changes}
+\label{sec:flips}
+
+\begin{lemma}[One-flip changes]
+\label{lem:flip}
+For every $\x\in\{0,1\}^n$ and $i\in V$,
+\begin{align}
+f(R_i^+(\x))-f(\x)&=c_i-\sum_{j\in N(i):\,x_j=0}w_{ij}\in[\,c_i-W_i,\;c_i\,]
+&&\text{if }x_i=0,
+\label{eq:flip-add}\\
+f(R_i^-(\x))-f(\x)&=-c_i+\sum_{j\in N(i):\,x_j=0}w_{ij}\in[\,-c_i,\;a_i\,]
+&&\text{if }x_i=1.
+\label{eq:flip-remove}
+\end{align}
+\end{lemma}
+
+\begin{proof}
+Only the terms of \eqref{eq:obj} that contain $x_i$ change: $c_ix_i$ and
+$w_{ij}(1-x_i)(1-x_j)$ for $j\in N(i)$. The latter equals $w_{ij}$ when $x_i=x_j=0$
+and $0$ otherwise. Placing a sensor at $i$ therefore adds $c_i$ and removes the
+weight of every pipe from $i$ to an empty neighbor, while pipes to occupied
+neighbors stay monitored; removing it reverses both effects. The intervals follow
+from $0\le\sum_{j\in N(i):x_j=0}w_{ij}\le W_i$.
+\end{proof}
+
+The change in Lemma~\ref{lem:flip} depends only on the neighborhood of $i$. This is
+the structural difference from the balanced minimum-cut objective of
+\cite{RSDB2026}, where removing a vertex from a set of size $k$ changes the cut by
+up to $2(k-1)$, which grows with $n$ and forces the threshold $\rho>n$.
+
+\begin{lemma}[Incident edge betweenness]
+\label{lem:betweenness}
+Let $w_{ij}$ be the normalized edge betweenness,
+\[
+w_{ij}=\frac{2}{n(n-1)}\sum_{\{u,v\}\subseteq V}\frac{\sigma_{uv}(ij)}{\sigma_{uv}},
+\]
+where $\sigma_{uv}$ counts the shortest $u$--$v$ paths, $\sigma_{uv}(ij)$ those
+using $\{i,j\}$, and pairs in different components contribute $0$. This is
+\texttt{networkx.edge\_betweenness\_centrality} as called by \texttt{centrality}.
+Then $W_i\le 2(n-1)/n<2$ for every $i$, with equality at the center of a star.
+\end{lemma}
+
+\begin{proof}
+Summing over the edges at $i$,
+$W_i=\frac{2}{n(n-1)}\sum_{\{u,v\}}\sigma_{uv}^{-1}\sum_P|P\cap\delta(i)|$, where
+$P$ ranges over the shortest $u$--$v$ paths and $\delta(i)$ is the set of edges at
+$i$. A shortest path is simple, so it contains at most one edge at $i$ when $i$ is
+an endpoint and at most two otherwise. There are $n-1$ pairs containing $i$ and
+$\binom{n-1}{2}$ pairs not containing it, so
+\[
+W_i\le\frac{2}{n(n-1)}\Bigl[(n-1)+2\binom{n-1}{2}\Bigr]
+=\frac{2}{n(n-1)}(n-1)(n-1)=\frac{2(n-1)}{n}.
+\]
+At the center of a star every pair containing the center uses exactly one edge at
+it and every pair of leaves passes through it using exactly two, so both bounds are
+attained.
+\end{proof}
+
+\section{Equality budget}
+\label{sec:equality}
+
+\begin{theorem}[Strict exactness for $\rho>\bar\rho_{=}$]
+\label{thm:eq}
+Let $0\le s\le n$ and
+\begin{equation}
+\rbeq:=\max_{i\in V}\max\{c_i,\;W_i-c_i\}.
+\label{eq:rbeq}
+\end{equation}
+If $\rho>\rbeq$, then
+$\argmin_{\x\in\{0,1\}^n}F_\rho=\argmin\{f(\x):\sum_ix_i=s\}$; in particular every
+minimizer of $F_\rho$ is feasible and $F_\rho(\x)>m_s$ for every infeasible $\x$.
+Note that $\rbeq\ge\max_iW_i/2\ge0$.
+\end{theorem}
+
+\begin{proof}
+On feasible points the penalty vanishes, so $\min_\x F_\rho\le m_s$. Suppose
+$\tilde\x$ minimizes $F_\rho$ and is infeasible, with $\tilde S:=S(\tilde\x)$ and
+$k=|\tilde S|\neq s$.
+
+If $k=s+r$, $r\ge1$, pick $i\in\tilde S$ and set $\x'=R_i^-(\tilde\x)$. By
+\eqref{eq:flip-remove}, $f(\x')-f(\tilde\x)\le a_i\le\rbeq$. The penalty changes by
+$\rho\bigl[(r-1)^2-r^2\bigr]=-\rho(2r-1)$, hence
+\begin{equation}
+F_\rho(\x')-F_\rho(\tilde\x)
+\le a_i-\rho(2r-1)
+<\rbeq-\rbeq(2r-1)
+=-2\rbeq(r-1)\le0,
+\label{eq:eq-drop}
+\end{equation}
+where the strict inequality uses $\rho>\rbeq$ and $2r-1\ge1$. This contradicts the
+optimality of $\tilde\x$. If $k=s-r$, $r\ge1$, then $k<n$, so some $i\notin\tilde S$
+exists; set $\x'=R_i^+(\tilde\x)$. By \eqref{eq:flip-add},
+$f(\x')-f(\tilde\x)\le c_i\le\rbeq$, the penalty drop is again $\rho(2r-1)$, and
+\eqref{eq:eq-drop} holds with $c_i$ in place of $a_i$.
+
+Thus every minimizer is feasible; on the feasible set $F_\rho=f$, so the
+minimizers of $F_\rho$ are exactly those of the constrained problem, and any
+infeasible $\x$ satisfies $F_\rho(\x)>\min F_\rho=m_s$.
+\end{proof}
+
+\begin{theorem}[Boundary case $\rho=\bar\rho_{=}$]
+\label{thm:eq-boundary}
+Let $\rho=\rbeq$ and $\tilde\x\in\argmin F_{\rbeq}$. A finite sequence of one-bit
+repairs ($R_i^-$ while $\sum_ix_i>s$, $R_i^+$ while $\sum_ix_i<s$) produces a
+feasible $\x^0$ with $F_{\rbeq}(\x^0)\le F_{\rbeq}(\tilde\x)$ and $f(\x^0)=m_s$.
+Hence $\min F_{\rbeq}=m_s$, although infeasible optimal ties may occur.
+\end{theorem}
+
+\begin{proof}
+For any $\x$ with $\sum_ix_i=s+r$, $r\ge1$, and $i\in S(\x)$, \eqref{eq:eq-drop}
+with $\rho=\rbeq$ gives $F_{\rbeq}(R_i^-(\x))-F_{\rbeq}(\x)\le-2\rbeq(r-1)\le0$;
+the case $\sum_ix_i=s-r$ is analogous. Each step is nonworsening and reduces
+$|\sum_ix_i-s|$ by one, so a feasible $\x^0$ with
+$F_{\rbeq}(\x^0)\le F_{\rbeq}(\tilde\x)\le m_s$ is reached, and feasibility forces
+$f(\x^0)=F_{\rbeq}(\x^0)\ge m_s$.
+\end{proof}
+
+The proof of Theorem~\ref{thm:eq} only needs \emph{one} repairable vertex, which
+yields a budget-dependent refinement. Write $a_{[1]}\ge\dots\ge a_{[n]}$ and
+$c_{[1]}\ge\dots\ge c_{[n]}$ for the sorted values, and set
+$a_{[n+1]}=c_{[n+1]}:=-\infty$.
+
+\begin{corollary}[Budget-dependent threshold]
+\label{cor:eq-budget}
+Let
+\begin{equation}
+\rbeq(s):=\max\bigl\{0,\;a_{[s+1]},\;c_{[n-s+1]}\bigr\}\le\rbeq .
+\label{eq:rbeq-s}
+\end{equation}
+If $\rho>\rbeq(s)$, the conclusions of Theorem~\ref{thm:eq} hold.
+\end{corollary}
+
+\begin{proof}
+If $k=s+r$, the set $\tilde S$ has at least $s+1$ elements, so it contains some
+$i$ with $a_i\le a_{[s+1]}$; repairing that $i$ gives
+$F_\rho(\x')-F_\rho(\tilde\x)\le a_{[s+1]}-\rho(2r-1)\le a_{[s+1]}-\rho<0$. If
+$k=s-r$, the complement $V\setminus\tilde S$ has at least $n-s+1$ elements, so it
+contains some $i$ with $c_i\le c_{[n-s+1]}$, and the same estimate holds. The
+inequality $\rbeq(s)\le\rbeq$ is immediate, since $a_{[s+1]}\le\max_ia_i$,
+$c_{[n-s+1]}\le\max_ic_i$ and $\rbeq\ge0$.
+\end{proof}
+
+\begin{proposition}[Sharpness of the equality threshold]
+\label{prop:eq-sharp}
+\leavevmode
+\begin{enumerate}
+\item[(a)] \emph{Every instance attains $\rbeq$.} For every instance,
+$\rseq(0)=\max\{0,\max_ia_i\}$ and $\rseq(n)=\max\{0,\max_ic_i\}$. Consequently
+\[
+\rbeq=\max_{0\le s\le n}\rseq(s),
+\]
+so no budget-independent penalty below $\rbeq$ is exact for every budget of a given
+network, and Corollary~\ref{cor:eq-budget} is attained at $s\in\{0,n\}$.
+\item[(b)] \emph{Pipe term, every budget.} For $s\ge0$ and $w>0$, let $G$ consist
+of $s+1$ disjoint pipes of weight $w$ with $c\equiv0$. Then $\rbeq=w$, and for
+every $\rho<w$ every minimizer of $F_\rho$ is infeasible; at $\rho=w$ infeasible
+optimal ties occur.
+\item[(c)] \emph{Cost term, every budget.} For $s\ge1$ and $c>0$, let $G$ consist
+of $n=s+1$ isolated vertices of cost $c$. Then $\rbeq(s)=\rbeq=c$, and for every
+$\rho<c$ every minimizer of $F_\rho$ is infeasible.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) For $s=0$ the only feasible point is $\x=\mathbf 0$, with
+$m_0=\sum_{\{i,j\}\in E}w_{ij}$. Placing one sensor at $i$ gives, by
+\eqref{eq:flip-add} with every neighbor empty, $F_\rho=m_0-a_i+\rho$, which beats
+$m_0$ whenever $\rho<a_i$; hence $\rseq(0)\ge\max\{0,\max_ia_i\}$, and
+Corollary~\ref{cor:eq-budget} at $s=0$ gives the matching upper bound. For $s=n$
+the only feasible point is $\ones$, with $m_n=\sum_ic_i$; removing the sensor at
+$i$ leaves every pipe monitored, so $F_\rho=m_n-c_i+\rho$, and the same two
+arguments give $\rseq(n)=\max\{0,\max_ic_i\}$. Finally
+$\rbeq=\max\{\rseq(0),\rseq(n)\}\le\max_s\rseq(s)\le\rbeq$, the last inequality by
+Theorem~\ref{thm:eq}.
+
+(b) Here $n=2s+2$, $W_i=w$ and $c_i=0$, so $\rbeq=w$. A feasible point places $s$
+sensors and monitors at most $s$ pipes, so $m_s=w$, attained with one sensor on
+each of $s$ pipes. The point $\x^\bullet$ with one sensor on every pipe has
+$f(\x^\bullet)=0$ and $F_\rho(\x^\bullet)=\rho<w=m_s$, so $\x^\bullet$ beats every
+feasible point and all minimizers are infeasible. At $\rho=w$,
+$F_w(\x^\bullet)=m_s$ is an infeasible tie.
+
+(c) There are no pipes, so $a_i=-c$, $c_{[n-s+1]}=c_{[2]}=c$ and
+$\rbeq(s)=\rbeq=c$. Feasible points cost $m_s=sc$, while $s-1$ sensors give
+$F_\rho=(s-1)c+\rho<sc$ for $\rho<c$.
+\end{proof}
+
+\section{Inequality budget}
+\label{sec:inequality}
+
+\begin{theorem}[Strict exactness for $\rho>\bar\rho_{\le}$]
+\label{thm:le}
+Let $s\ge0$, let $B$ satisfy \eqref{eq:slack}, and let
+\begin{equation}
+\rble:=\max\Bigl\{0,\;\max_{i\in V}(W_i-c_i)\Bigr\}.
+\label{eq:rble}
+\end{equation}
+If $\rho>\rble$, then every minimizer $(\tilde\x,\tilde\y)$ of $G_\rho$ satisfies
+$d(\tilde\x,\tilde\y)=0$, hence $\sum_i\tilde x_i\le s$; moreover
+$\min G_\rho=M_s$, and the $\x$-parts of the minimizers of $G_\rho$ are exactly the
+minimizers of $\{f(\x):\sum_ix_i\le s\}$.
+\end{theorem}
+
+\begin{proof}
+For every $\x$ with $\sum_ix_i\le s$, \eqref{eq:slack} provides $\y_\x$ with
+$B(\y_\x)=s-\sum_ix_i$, so $G_\rho(\x,\y_\x)=f(\x)$ and $\min G_\rho\le M_s$.
+Suppose $(\tilde\x,\tilde\y)$ minimizes $G_\rho$ with $\tilde d:=d(\tilde\x,\tilde\y)\neq0$.
+
+If $\sum_i\tilde x_i\le s$, then
+$G_\rho(\tilde\x,\y_{\tilde\x})=f(\tilde\x)<f(\tilde\x)+\rho\tilde d^2=G_\rho(\tilde\x,\tilde\y)$
+because $\rho>0$, a contradiction.
+
+If $\sum_i\tilde x_i=s+r$ with $r\ge1$, then $\tilde d\ge r\ge1$ because
+$B\ge0$. Pick $i\in S(\tilde\x)$, set $\x'=R_i^-(\tilde\x)$ and keep $\tilde\y$. By
+\eqref{eq:flip-remove}, $f(\x')-f(\tilde\x)\le a_i\le\rble$, and the penalty
+changes by $\rho\bigl[(\tilde d-1)^2-\tilde d^2\bigr]=-\rho(2\tilde d-1)$, so
+\begin{equation}
+G_\rho(\x',\tilde\y)-G_\rho(\tilde\x,\tilde\y)\le a_i-\rho(2\tilde d-1)
+<\rble-\rble(2\tilde d-1)\le0,
+\label{eq:le-drop}
+\end{equation}
+again a contradiction. Hence every minimizer has $d=0$ and thus
+$\sum_i\tilde x_i\le s$ and $G_\rho(\tilde\x,\tilde\y)=f(\tilde\x)\ge M_s$; combined
+with $\min G_\rho\le M_s$ this gives $\min G_\rho=M_s$ and the optimality of
+$\tilde\x$. Conversely every optimal $\x$ extends to the minimizer $(\x,\y_\x)$.
+\end{proof}
+
+\begin{theorem}[Boundary case $\rho=\bar\rho_{\le}$]
+\label{thm:le-boundary}
+If $\rble>0$, then $\min G_{\rble}=M_s$, although infeasible optimal ties may occur.
+\end{theorem}
+
+\begin{proof}
+Let $(\tilde\x,\tilde\y)$ be a minimizer. While $\sum_ix_i>s$ we have $d\ge1$, and
+\eqref{eq:le-drop} with $\rho=\rble$ shows that removing any sensor does not
+increase $G_{\rble}$. After finitely many removals $\sum_ix_i\le s$, and replacing
+$\y$ by $\y_\x$ gives a point with value $f(\x)\ge M_s$ and no larger than
+$G_{\rble}(\tilde\x,\tilde\y)\le M_s$.
+\end{proof}
+
+\begin{corollary}[Budget-dependent threshold]
+\label{cor:le-budget}
+If $\rho>\rble(s):=\max\{0,a_{[s+1]}\}\le\rble$, the conclusions of
+Theorem~\ref{thm:le} hold.
+\end{corollary}
+
+\begin{proof}
+In the case $\sum_i\tilde x_i=s+r$, the set $S(\tilde\x)$ has at least $s+1$
+elements and contains some $i$ with $a_i\le a_{[s+1]}$; repair that vertex in
+\eqref{eq:le-drop}.
+\end{proof}
+
+\begin{proposition}[Sharpness of the inequality threshold]
+\label{prop:le-sharp}
+(a) For every instance, $\rsle(0)=\rble$, so $\rble=\max_{s\ge0}\rsle(s)$.
+(b) For the $s+1$ disjoint pipes of Proposition~\ref{prop:eq-sharp}(b),
+$\rble=w$, $M_s=w$, and for every $\rho<w$ every minimizer of $G_\rho$ places
+more than $s$ sensors.
+\end{proposition}
+
+\begin{proof}
+(a) For $s=0$ the encoding is empty ($K=0$), so $G_\rho=F_\rho$ and
+$\rsle(0)=\rseq(0)=\max\{0,\max_ia_i\}=\rble$ by
+Proposition~\ref{prop:eq-sharp}(a); Theorem~\ref{thm:le} gives $\rsle(s)\le\rble$
+for every $s$.
+(b) A point with at most $s$ sensors monitors at most $s$ pipes, so $M_s=w$. The
+point $\x^\bullet$ with one sensor per pipe has $\min_\y G_\rho(\x^\bullet,\y)=\rho$,
+attained at $\y=\mathbf0$, which is below $M_s$ when $\rho<w$; hence no point
+with at most $s$ sensors is a minimizer.
+\end{proof}
+
+\begin{remark}[Why the cost term disappears]
+\label{rem:onesided}
+Under the inequality budget, a deficit $\sum_ix_i<s$ is absorbed by the slack at no
+cost, so only the removal direction \eqref{eq:flip-remove} must be repaired, and
+$c_i$ no longer enters the threshold. Equivalently, for every $\x$ and $\rho>0$,
+$\min_\y G_\rho(\x,\y)=f(\x)+\rho\max\{0,\sum_ix_i-s\}^2$: the slack turns the
+two-sided penalty into a one-sided one. The price is $K=\lfloor\log_2s\rfloor+1$
+extra variables, coupled to every $x_i$ with strength $\rho\beta_\ell$, so the QUBO
+remains a complete graph on $n+K$ variables.
+\end{remark}
+
+\section{Water distribution networks}
+\label{sec:wdn}
+
+The repository builds $c$ and $w$ with \texttt{centrality} in
+\texttt{src/network.py}: $c_i=q_i/\max_jq_j+\deg(i)/(n-1)^2$, where $q_i\ge0$ is
+the water demand at $i$ and $\deg(i)/(n-1)$ is \texttt{networkx}'s degree
+centrality divided by $n-1$ once more, and $w_{ij}$ is the normalized edge
+betweenness of Lemma~\ref{lem:betweenness}.
+
+\begin{corollary}[A size-independent exact penalty]
+\label{cor:wdn}
+Assume $q_i\ge0$ for all $i$ and $\max_jq_j>0$. Then $0\le c_i\le1+\frac1{n-1}$ and
+$W_i\le\frac{2(n-1)}{n}$, so
+\[
+\rbeq\le\max\Bigl\{1+\tfrac1{n-1},\;\tfrac{2(n-1)}{n}\Bigr\},
+\qquad
+\rble\le\tfrac{2(n-1)}{n}.
+\]
+In particular, for $n\ge3$ the penalty $\rho=2$ is strictly exact for every
+network, every budget $s$, and both the equality and the inequality budget. The
+notebook's rule $\rho_{\rm nb}:=\sum_i|c_i|+1$ satisfies $\rho_{\rm nb}\ge2$ and is
+therefore also exact for $n\ge3$, but
+$\rho_{\rm nb}\ge1+\sum_iq_i/\max_jq_j$ grows linearly in $n$ for comparable
+demands.
+\end{corollary}
+
+\begin{proof}
+The demand term lies in $[0,1]$ and the degree term in $[0,\frac1{n-1}]$, since
+$\deg(i)\le n-1$. Lemma~\ref{lem:betweenness} bounds $W_i$, and
+$W_i-c_i\le W_i$. For $n\ge3$, $1+\frac1{n-1}\le\frac32<2$ and
+$\frac{2(n-1)}n<2$, so Theorems~\ref{thm:eq} and~\ref{thm:le} apply at $\rho=2$.
+If $i^\ast$ has the largest demand then $c_{i^\ast}\ge1$, so
+$\rho_{\rm nb}\ge c_{i^\ast}+1\ge2$.
+\end{proof}
+
+\begin{remark}[Degree term]
+\label{rem:degree}
+If the second division by $n-1$ is removed, so that the degree term is
+\texttt{networkx}'s degree centrality in $[0,1]$ (SUSPECT-1 in
+\texttt{docs/code\_review.md}), the same argument gives $c_i\le2$ and $\rbeq\le2$,
+so every $\rho>2$ is exact.
+\end{remark}
+
+Table~\ref{tab:networks} evaluates the thresholds on every network in
+\texttt{Data/WDN\_Data}. In every network $\rbeq=\max_ic_i\approx1$, set by the
+vertex with the largest demand, regardless of size, while $\rho_{\rm nb}$ is $4$ to
+$110$ times larger.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrcccccc}
+\toprule
+Network & $n$ & $|E|$ & $\max_ic_i$ & $\max_iW_i$ & $\frac{2(n-1)}{n}$ & $\rho_{\rm nb}$ & $\rbeq$ & $\rble$\\
+\midrule
+Test     & 18  & 18  & 1.0069 & 0.2353 & 1.8889 & 3.821   & 1.0069 & 0.1636\\
+Apulia   & 24  & 34  & 1.0057 & 0.5709 & 1.9167 & 4.473   & 1.0057 & 0.4493\\
+Fossolo  & 37  & 58  & 1.0023 & 0.4205 & 1.9459 & 5.581   & 1.0023 & 0.3386\\
+ZJ       & 114 & 162 & 1.0002 & 1.0506 & 1.9825 & 23.659  & 1.0002 & 0.9130\\
+Modena   & 272 & 317 & 1.0000 & 0.6186 & 1.9926 & 43.980  & 1.0000 & 0.4311\\
+Kentucky & 856 & 982 & 1.0000 & 0.5498 & 1.9977 & 109.987 & 1.0000 & 0.4944\\
+\bottomrule
+\end{tabular}
+\caption{Penalty thresholds for the networks in \texttt{Data/WDN\_Data}, with costs
+and weights from \texttt{centrality}. $\rho_{\rm nb}=\sum_i|c_i|+1$ is the value
+used in the notebook and stored in \texttt{logs/}. Values are rounded to four
+decimals; $\max_ic_i$ exceeds $1$ only through the degree term, which is at most
+$1/(n-1)$.}
+\label{tab:networks}
+\end{table}
+
+\section{Per-instance critical penalty}
+\label{sec:rhostar}
+
+Because the configuration space is finite, the critical penalties are explicit
+functions of the coverage curves \eqref{eq:coverage}, in the same way as the
+identity for $\rho^\star$ in the balanced minimum-cut analysis of
+\cite{RSDB2026}.
+
+\begin{proposition}[Critical penalty from the coverage curve]
+\label{prop:rhostar}
+For every instance,
+\begin{align}
+\rseq(s)&=\max\Bigl\{0,\;\max_{k\neq s}\frac{m_s-m_k}{(k-s)^2}\Bigr\},
+\label{eq:rhostar-eq}\\
+\rsle(s)&=\max\Bigl\{0,\;\max_{k>s}\frac{M_s-M_k}{(k-s)^2}\Bigr\}.
+\label{eq:rhostar-le}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+For \eqref{eq:rhostar-eq}: every minimizer of $F_\rho$ is feasible exactly when
+$f(\x)+\rho(\sum_ix_i-s)^2>m_s$ for every infeasible $\x$. For a fixed count
+$k\neq s$ the most demanding $\x$ is one with $f(\x)=m_k$, so the condition reads
+$\rho>(m_s-m_k)/(k-s)^2$ for all $k\neq s$; at equality an infeasible tie exists.
+
+For \eqref{eq:rhostar-le}: if $\sum_ix_i\le s$ then $\min_\y G_\rho(\x,\y)=f(\x)$,
+attained only where $d=0$ when $\rho>0$. If $\sum_ix_i=k>s$ then $d\ge k-s$ with
+equality at $\y=\mathbf0$, so $\min_\y G_\rho(\x,\y)=f(\x)+\rho(k-s)^2$. Hence every
+minimizer has $d=0$ if and only if $\rho>0$ and $\rho>(M_s-m_k)/(k-s)^2$ for every
+$k>s$. Replacing $m_k$ by $M_k\le m_k$ cannot lower any term; conversely, if
+$M_k=m_j$ with $s<j\le k$ then $(M_s-M_k)/(k-s)^2\le(M_s-m_j)/(j-s)^2$, and if
+$M_k=M_s$ the term is $0$. The two maxima therefore coincide.
+\end{proof}
+
+The notebook chooses the budget as the first sensor count at which the coverage
+curve reaches its minimum (cell 14). At that budget no penalty is needed.
+
+\begin{proposition}[Budget at the minimum of the coverage curve]
+\label{prop:sstar}
+Let $s^\ast$ be the smallest minimizer of $k\mapsto M_k$. Then
+$m_{s^\ast}=M_{s^\ast}=\min_km_k$, and $\rseq(s^\ast)=\rsle(s^\ast)=0$: every
+$\rho>0$ is strictly exact at $s^\ast$, for both budgets.
+\end{proposition}
+
+\begin{proof}
+The sequence $(M_k)$ is nonincreasing with $M_n=\min_km_k$. If
+$m_{s^\ast}>M_{s^\ast}$ then $s^\ast\ge1$ and
+$M_{s^\ast-1}=M_{s^\ast}$, contradicting the minimality of $s^\ast$. Hence
+$m_{s^\ast}=\min_km_k$, every term $m_{s^\ast}-m_k$ in \eqref{eq:rhostar-eq} is
+nonpositive, and $M_{s^\ast}-M_k=0$ for all $k>s^\ast$ in \eqref{eq:rhostar-le}.
+\end{proof}
+
+At $s^\ast$ the unconstrained minimum of $f$ already places $s^\ast$ sensors, and
+the penalty only breaks ties between budgets. Its magnitude then plays no role in
+exactness and only rescales the landscape seen by simulated annealing, tabu search
+and the annealer.
+
+\paragraph{Exact values, numerically.}
+For the two networks small enough to enumerate, Table~\ref{tab:rhostar} reports
+the exact critical penalties over all budgets, computed from \eqref{eq:rhostar-eq}
+and \eqref{eq:rhostar-le} with the coverage curves obtained by evaluating all
+$2^n$ placements. For Apulia, $s^\ast=11$ is the budget stored in
+\texttt{logs/Apulia}, and $m_{11}=1.300182$ equals, to ten digits, the best tabu
+search energy in \texttt{Apulia\_TabuSearch.json}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrcccccc}
+\toprule
+Network & $n$ & $s^\ast$ & $m_{s^\ast}$ & $\rseq(s^\ast)$ & $\max_{0<s<n}\rseq(s)$ & $\operatorname{med}_s\rseq(s)$ & $\rseq(n)=\rbeq$ & $\rsle(0)=\rble$\\
+\midrule
+Test   & 18 & 6  & 0.8115 & 0 & 0.1418 & 0.1210 & 1.0069 & 0.1636\\
+Apulia & 24 & 11 & 1.3002 & 0 & 0.3546 & 0.1109 & 1.0057 & 0.4493\\
+\bottomrule
+\end{tabular}
+\caption{Exact critical penalties by enumeration of all $2^n$ placements. The
+maximum over intermediate budgets is attained at $s=1$ in both networks, and
+$\rsle(s)=0$ for every $s\ge s^\ast$.}
+\label{tab:rhostar}
+\end{table}
+
+\begin{remark}[Computing $\rho^\star$ at scale]
+\label{rem:compute}
+Proposition~\ref{prop:rhostar} reduces $\rho^\star$ to $n+1$ constrained optima.
+For $n\lesssim25$ they follow from exhaustive enumeration, as above. For larger
+networks they are $n+1$ MIQP solves with $\sum_ix_i=k$; for the inequality budget
+the curve $(M_k)$ returned by \texttt{coverage} already suffices. Since
+\texttt{coverage} uses $\sum_ix_i\le s$ (BUG-03 in
+\texttt{docs/code\_review.md}), it returns $M$, not $m$, so \eqref{eq:rhostar-eq}
+requires the equality version.
+\end{remark}
+
+\section{Synthesis and open problems}
+\label{sec:synthesis}
+
+Three penalties describe the same QUBO:
+\begin{itemize}
+\item \textbf{Instance threshold.} $\rho>\rbeq$ (equality) or $\rho>\rble$
+(inequality) is exact for every budget (Theorems~\ref{thm:eq}--\ref{thm:le-boundary}),
+and no smaller budget-independent penalty is (Propositions~\ref{prop:eq-sharp}
+and~\ref{prop:le-sharp}). The thresholds depend only on the neighborhood of each
+vertex, and for the repository's networks they are below $2$ independently of $n$
+(Corollary~\ref{cor:wdn}).
+\item \textbf{Per-instance critical penalty.} $\rho^\star(s)$ is an explicit
+function of the coverage curve (Proposition~\ref{prop:rhostar}); it vanishes at
+the budget the notebook selects (Proposition~\ref{prop:sstar}) and stays below
+$0.36$ at every intermediate budget of the enumerated networks.
+\item \textbf{Notebook rule.} $\rho_{\rm nb}=\sum_i|c_i|+1$ is exact but grows
+linearly in $n$, reaching $110$ on Kentucky.
+\end{itemize}
+There is no conflict between these values: $\rho_{\rm nb}$ is exact because it
+exceeds $\rbeq$, and $\rbeq$ is the worst case of $\rho^\star(s)$ over budgets.
+
+\paragraph{Practical guidance.} Use $\rho=2$ for every network with $n\ge3$, or
+$\rbeq(s)(1+\varepsilon)$ from Corollary~\ref{cor:eq-budget} when a smaller value is
+wanted for a fixed budget. At $s^\ast$, any small $\rho>0$ is exact. The penalty
+sets the scale of $Q$: the diagonal entries are
+$c_i-W_i+\rho(1-2s)$, which for Modena ($s=87$) is about $-7608$ at
+$\rho_{\rm nb}=43.98$, the value printed in the notebook, against about $-346$ at
+$\rho=2$, a dynamic range $22$ times smaller. Whether this improves the samplers is
+an empirical question that the logs cannot answer, since every run used
+$\rho_{\rm nb}$; it is most pressing for quantum annealing, which found no feasible
+sample on ZJ.
+
+\paragraph{Open problems.} First, the effect of $\rho$ on heuristic and quantum
+samplers, as opposed to exactness, which is settled here: a smaller penalty
+flattens the barriers between budgets, which may help or hurt mixing. Second,
+encodings of the inequality budget without slack bits, such as one-sided penalties
+that are not quadratic, are not covered by Theorem~\ref{thm:le}. Third, problems
+with several budgets, for example per-district sensor limits, add one penalty per
+constraint; the one-flip argument extends when every vertex appears in a bounded
+number of constraints, but the interaction between penalties is not analyzed here.
+
+\paragraph{Relation to prior work.}
+The one-bit repair arguments follow the QUBO exactness pattern of Quintero, Bernal,
+Terlaky, and Zuluaga \cite{QBTZ2021}, and the structure of this note follows the
+balanced minimum-cut analysis of \cite{RSDB2026}. Slack-variable encodings of
+inequality constraints in QUBOs are standard; see \cite{Lucas2014}.
+
+\paragraph{Reproducibility.}
+Every statement above is checked numerically by
+\nolinkurl{docs/penalty_parameter/verify_penalty_thresholds.py}. Run it from the
+repository root. It checks:
+\begin{itemize}
+\item Lemmas~\ref{lem:flip}--\ref{lem:betweenness} on random graphs;
+\item Theorems~\ref{thm:eq}--\ref{thm:le-boundary},
+Corollaries~\ref{cor:eq-budget} and~\ref{cor:le-budget},
+Propositions~\ref{prop:eq-sharp}(a), \ref{prop:le-sharp}(a), \ref{prop:rhostar}
+and~\ref{prop:sstar}, by exhaustive enumeration of the penalized QUBOs, including
+the slack bits, on $300$ random connected graphs with $n\le9$ (seed
+$20261007$), half scored with \texttt{centrality} and half with generic
+$c_i\sim U[-1,2]$, $w_{ij}\sim U[0,2]$;
+\item the sharpness families of Propositions~\ref{prop:eq-sharp}(b)--(c)
+and~\ref{prop:le-sharp}(b).
+\end{itemize}
+It also computes Tables~\ref{tab:networks} and~\ref{tab:rhostar}, which it writes
+to \texttt{penalty\_thresholds\_results.json}.
+
+\begin{thebibliography}{3}
+\bibitem{Lucas2014}
+A.~Lucas, ``Ising formulations of many NP problems,'' \emph{Frontiers in Physics},
+2 (2014), p.~5.
+\url{https://doi.org/10.3389/fphy.2014.00005}.
+
+\bibitem{QBTZ2021}
+R.~Quintero, D.~Bernal, T.~Terlaky, and L.~F.~Zuluaga,
+``Characterization of QUBO reformulations for the maximum $k$-colorable subgraph
+problem,'' \emph{arXiv preprint} arXiv:2101.09462, 2021.
+\url{https://arxiv.org/abs/2101.09462}.
+
+\bibitem{RSDB2026}
+A.~Ramesh, B.~Sundar, M.~Dupont, and D.~E.~Bernal Neira,
+``Quantum preconditioning for constrained optimization problems,''
+\emph{arXiv preprint} arXiv:2608.28842, 2026, Appendix~A.
+\url{https://arxiv.org/abs/2608.28842}.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,24 @@
+{
+  "solver": "TabuSearch",
+  "city": "Apulia",
+  "timestamp": "2025-12-13T12:35:45.236723",
+  "parameters": {
+    "num_reads": 4000,
+    "tenure": "default",
+    "timeout": "default"
+  },
+  "timing": {
+    "total_time_seconds": 76.57165908813477
+  },
+  "results": {
+    "num_samples": 4000,
+    "unique_solutions": 1,
+    "min_energy": 1.3001818593051588,
+    "max_energy": 1.3001818593051588,
+    "energy_stats": {
+      "mean": 1.3001818593051588,
+      "std": 0.0
+    }
+  },
+  "solver_info": {}
+}
