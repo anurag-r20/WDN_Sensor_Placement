@@ -1,0 +1,4 @@
+Dandy, Graeme, "01 New York Tunnel" (2016). Historic Literature Systems. 1. https://uknowledge.uky.edu/wdst_systems/1
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: new_york.inp
+The New_York_Tunnel_WDN_Nodes, _Edges and _Water_Consumption TXT files are converted from the EPANET file. Every junction, reservoir and tank is a node and every pipe, pump and valve is an edge. Bare-number IDs get a J- (junction) or T- (reservoir or tank) prefix. Consumption is the junction's base demand, or the sum of its [DEMANDS] entries when it has any.

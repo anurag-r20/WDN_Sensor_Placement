@@ -1,0 +1,4 @@
+Hall, Ashley, "01 KYPIPE Example 1" (2021). Software Manual Examples. 3. https://uknowledge.uky.edu/wdst_manuals/3
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: kypipe1.inp
+This EPANET file is in EPANET's binary project format. Export it from the EPANET app as a text .inp file before converting it.

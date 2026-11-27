@@ -1,0 +1,4 @@
+Ormsbee, Lindell E., "04 KYPIPE Example 8" (2021). Software Manual Examples. 6. https://uknowledge.uky.edu/wdst_manuals/6
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: KYPIPE Example 8.inp
+This EPANET file is in EPANET's binary project format. Export it from the EPANET app as a text .inp file before converting it.

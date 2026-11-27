@@ -1,0 +1,3 @@
+Hall, Ashley, "01 Apulia" (2021). International Systems. 1. https://uknowledge.uky.edu/wdst_international/1
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: apulia.inp
