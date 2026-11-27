@@ -1,0 +1,4 @@
+Hall, Ashley, "08 Modified Federally Owned Water Main" (2021). Historic Literature Systems. 10. https://uknowledge.uky.edu/wdst_systems/10
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: ModifiedFOWM.inp
+This EPANET file is in EPANET's binary project format. Export it from the EPANET app as a text .inp file before converting it.

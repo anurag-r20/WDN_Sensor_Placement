@@ -1,0 +1,3 @@
+Hall, Ashley, "05 Modena" (2021). International Systems. 5. https://uknowledge.uky.edu/wdst_international/5
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: modena.inp

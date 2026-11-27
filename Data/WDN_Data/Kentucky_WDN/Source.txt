@@ -1,0 +1,3 @@
+Hoagland, Steven, "01 KY 1" (2016). Kentucky Dataset. 3. https://uknowledge.uky.edu/wdst/3
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: ky1.inp

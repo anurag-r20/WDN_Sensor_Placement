@@ -1,0 +1,3 @@
+Dandy, Graeme, "06 Zhi Jiang" (2016). International Systems. 6. https://uknowledge.uky.edu/wdst_international/6
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: Zhi Jiang.inp

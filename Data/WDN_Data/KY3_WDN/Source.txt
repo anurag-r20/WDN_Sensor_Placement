@@ -1,0 +1,4 @@
+Hoagland, Steven, "03 KY 3" (2016). Kentucky Dataset. 5. https://uknowledge.uky.edu/wdst/5
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: ky3.inp
+The KY3_WDN_Nodes, _Edges and _Water_Consumption TXT files are converted from the EPANET file. Every junction, reservoir and tank is a node and every pipe, pump and valve is an edge. Bare-number IDs get a J- (junction) or T- (reservoir or tank) prefix. Consumption is the junction's base demand, or the sum of its [DEMANDS] entries when it has any.

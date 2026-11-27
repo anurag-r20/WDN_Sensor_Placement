@@ -1,0 +1,3 @@
+Hall, Ashley, "04 Pescara" (2021). International Systems. 4. https://uknowledge.uky.edu/wdst_international/4
+License: CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/
+EPANET file: pescara.inp
